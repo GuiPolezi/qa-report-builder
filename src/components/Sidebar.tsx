@@ -98,13 +98,13 @@ export default function Sidebar() {
 
   return (
     <aside className="flex h-screen w-72 flex-col border-r border-slate-200 bg-white">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-4 py-4">
+      {/* Logo (clicável: volta à página inicial) */}
+      <Link to="/" className="flex items-center gap-2 px-4 py-4 transition-colors hover:bg-slate-50">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-sm font-bold text-white">
           QA
         </div>
         <span className="font-semibold text-slate-900">Report Builder</span>
-      </div>
+      </Link>
 
       {/* Novo relatório */}
       <div className="px-3">

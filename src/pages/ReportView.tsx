@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
+import { Home } from 'lucide-react'
 import { useReportsStore } from '@/store/reportsStore'
 import { useAuthStore } from '@/store/authStore'
 import { relativeTime } from '@/lib/dateGroups'
@@ -74,6 +75,14 @@ export default function ReportView() {
       {/* Header de ações */}
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
         <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            title="Voltar à página inicial"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          >
+            <Home className="h-4 w-4" />
+            <span className="hidden sm:inline">Início</span>
+          </Link>
           <span className={`text-xs ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-400'}`}>
             {saveLabel}
           </span>
