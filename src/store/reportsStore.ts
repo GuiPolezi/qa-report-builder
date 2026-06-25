@@ -64,6 +64,8 @@ interface ReportsState {
   fetchAssignableGroups: () => Promise<void>
   setCurrentGroup: (groupId: string | null) => void
   createReport: () => Promise<string | null>
+  createReportWithBlocks: (title: string, blocks: Block[]) => Promise<string | null>
+  updateReportBlocks: (id: string, blocks: Block[]) => Promise<void>
   openReport: (id: string) => Promise<void>
   clearCurrent: () => void
   setCurrentTitle: (title: string) => void
@@ -146,6 +148,28 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
     const item = mapListItem(data)
     set({ list: [item, ...get().list] })
     return item.id
+  },
+
+  createReportWithBlocks: async (title, blocks) => {
+    const user = useAuthStore.getState().user
+    if (!user) return null
+    const { data, error } = await supabase
+      .from('reports')
+      .insert({ owner_id: user.id, group_id: null, title, client_name: null, blocks })
+      .select(LIST_COLS)
+      .single()
+    if (error || !data) {
+      console.error('[reports] createReportWithBlocks:', error?.message)
+      return null
+    }
+    const item = mapListItem(data)
+    set({ list: [item, ...get().list] })
+    return item.id
+  },
+
+  updateReportBlocks: async (id, blocks) => {
+    const { error } = await supabase.from('reports').update({ blocks }).eq('id', id)
+    if (error) console.error('[reports] updateReportBlocks:', error.message)
   },
 
   openReport: async (id) => {

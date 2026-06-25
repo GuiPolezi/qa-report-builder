@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore, useIsAdmin } from '@/store/authStore'
 import { useReportsStore } from '@/store/reportsStore'
 import { groupByDate } from '@/lib/dateGroups'
+import { parseDocx, dataUrlToFile } from '@/lib/importDocx'
+import { uploadReportImage } from '@/lib/storage'
 
 export default function Sidebar() {
   const navigate = useNavigate()
@@ -15,10 +17,15 @@ export default function Sidebar() {
   const listLoading = useReportsStore((s) => s.listLoading)
   const fetchList = useReportsStore((s) => s.fetchList)
   const createReport = useReportsStore((s) => s.createReport)
+  const createReportWithBlocks = useReportsStore((s) => s.createReportWithBlocks)
+  const updateReportBlocks = useReportsStore((s) => s.updateReportBlocks)
   const deleteReport = useReportsStore((s) => s.deleteReport)
+  const userId = useAuthStore((s) => s.user?.id)
 
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     void fetchList()
@@ -41,6 +48,44 @@ export default function Sidebar() {
     const id = await createReport()
     setCreating(false)
     if (id) navigate(`/r/${id}`)
+  }
+
+  const onImportFile = async (file?: File | null) => {
+    if (fileRef.current) fileRef.current.value = ''
+    if (!file) return
+    setImporting(true)
+    try {
+      const buf = await file.arrayBuffer()
+      const name = file.name.replace(/\.docx$/i, '')
+      const { title, blocks, images } = await parseDocx(buf, name)
+      const id = await createReportWithBlocks(title, blocks)
+      if (!id) throw new Error('Falha ao criar o relatório')
+
+      if (images.length && userId) {
+        const pathByBlock = new Map<string, string>()
+        for (const img of images) {
+          try {
+            const f = dataUrlToFile(img.dataUrl, 'import')
+            const path = await uploadReportImage(f, id, userId)
+            pathByBlock.set(img.blockId, path)
+          } catch (e) {
+            console.error('[import] imagem:', e)
+          }
+        }
+        const finalBlocks = blocks.map((b) =>
+          b.type === 'image' && pathByBlock.has(b.id)
+            ? { ...b, storagePath: pathByBlock.get(b.id)! }
+            : b,
+        )
+        await updateReportBlocks(id, finalBlocks)
+      }
+      navigate(`/r/${id}`)
+    } catch (e) {
+      console.error('[import]', e)
+      alert('Não foi possível importar. Verifique se o arquivo é um .docx válido.')
+    } finally {
+      setImporting(false)
+    }
   }
 
   const onDelete = async (e: React.MouseEvent, id: string, title: string) => {
@@ -71,6 +116,20 @@ export default function Sidebar() {
           <span className="text-lg leading-none">+</span>
           {creating ? 'Criando…' : 'Novo Relatório'}
         </button>
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={importing}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+        >
+          {importing ? 'Importando…' : 'Importar Word'}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".docx"
+          className="hidden"
+          onChange={(e) => void onImportFile(e.target.files?.[0])}
+        />
       </div>
 
       {/* Busca */}
