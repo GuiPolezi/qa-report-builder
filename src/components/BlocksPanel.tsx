@@ -4,8 +4,7 @@ import { useReportsStore } from '@/store/reportsStore'
 import { useUiStore } from '@/store/uiStore'
 import { BLOCK_CATALOG } from '@/components/blocks/blockCatalog'
 
-// Painel "Inserir bloco" que vive na sidebar quando um relatório está aberto.
-// Clicou na seta -> expande e mostra o catálogo de blocos.
+// Painel "Inserir bloco" em destaque na sidebar quando um relatório está aberto.
 export default function BlocksPanel() {
   const open = useUiStore((s) => s.blocksPanelOpen)
   const toggle = useUiStore((s) => s.toggleBlocksPanel)
@@ -26,38 +25,41 @@ export default function BlocksPanel() {
   }, [query])
 
   return (
-    <div className="px-3 pt-3">
-      {/* Cabeçalho com a seta */}
+    <div className="mx-3 mt-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-2">
+      {/* Botão de destaque com a seta */}
       <button
         onClick={toggle}
-        className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+        aria-expanded={open}
+        className="flex w-full items-center justify-between rounded-xl bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-indigo-700/10 transition-colors hover:bg-indigo-700"
       >
         <span className="flex items-center gap-2">
-          <LayoutGrid className="h-4 w-4 text-slate-500" />
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/20">
+            <LayoutGrid className="h-4 w-4" />
+          </span>
           Inserir bloco
         </span>
-        <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Conteúdo expansível */}
+      {/* Conteúdo expansível (animação de altura) */}
       <div
         className={`grid transition-all duration-200 ease-out ${
           open ? 'mt-2 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
         }`}
       >
         <div className="overflow-hidden">
-          <div className="rounded-lg border border-slate-200 bg-white p-2">
+          <div className="rounded-xl border border-indigo-100 bg-white p-2">
             <div className="relative mb-2">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar bloco…"
-                className="w-full rounded-md border border-slate-300 py-1.5 pl-7 pr-2 text-sm outline-none focus:border-slate-500"
+                className="w-full rounded-md border border-slate-300 py-1.5 pl-7 pr-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
 
-            <div className="max-h-[44vh] space-y-2 overflow-y-auto pr-1">
+            <div className="max-h-[42vh] space-y-2 overflow-y-auto pr-1">
               {groups.length === 0 && <p className="px-1 py-2 text-sm text-slate-400">Nada encontrado.</p>}
               {groups.map(([group, entries]) => (
                 <div key={group}>
@@ -70,9 +72,9 @@ export default function BlocksPanel() {
                           key={e.type}
                           onClick={() => insertBlock(e.type)}
                           title={e.desc}
-                          className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-slate-100"
+                          className="group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-indigo-50"
                         >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 transition-colors group-hover:bg-indigo-100 group-hover:text-indigo-700">
                             <Icon className="h-4 w-4" />
                           </span>
                           <span className="truncate text-sm text-slate-700">{e.label}</span>
