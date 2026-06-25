@@ -5,6 +5,7 @@ import { useReportsStore } from '@/store/reportsStore'
 import { groupByDate } from '@/lib/dateGroups'
 import { parseDocx, dataUrlToFile } from '@/lib/importDocx'
 import { uploadReportImage } from '@/lib/storage'
+import BlocksPanel from '@/components/BlocksPanel'
 
 export default function Sidebar() {
   const navigate = useNavigate()
@@ -21,6 +22,10 @@ export default function Sidebar() {
   const updateReportBlocks = useReportsStore((s) => s.updateReportBlocks)
   const deleteReport = useReportsStore((s) => s.deleteReport)
   const userId = useAuthStore((s) => s.user?.id)
+  // Painel de blocos só aparece num relatório aberto que o usuário pode editar
+  const currentId = useReportsStore((s) => s.current?.id)
+  const currentOwnerId = useReportsStore((s) => s.current?.ownerId)
+  const canInsertBlocks = !!currentId && currentOwnerId === profile?.id
 
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
@@ -131,6 +136,9 @@ export default function Sidebar() {
           onChange={(e) => void onImportFile(e.target.files?.[0])}
         />
       </div>
+
+      {/* Painel de blocos (só num relatório editável) */}
+      {canInsertBlocks && <BlocksPanel />}
 
       {/* Busca */}
       <div className="px-3 pt-3">
