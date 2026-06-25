@@ -106,6 +106,7 @@ export interface PageCardBlock extends BaseBlock {
 export interface ParagraphBlock extends BaseBlock {
   type: 'paragraph';
   text: string;
+  color?: StatusValue; // cor do texto, alinhada à legenda (opcional)
 }
 
 // 9. Checklist (to-do)

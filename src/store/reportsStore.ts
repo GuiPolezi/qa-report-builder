@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
-import { createEmptyReport } from '@/types/blocks'
-import type { Block, Report } from '@/types/blocks'
+import { createEmptyReport, createBlock } from '@/types/blocks'
+import type { Block, BlockType, Report } from '@/types/blocks'
 
 // Item leve para a lista da sidebar
 export interface ReportListItem {
@@ -50,6 +50,7 @@ interface ReportsState {
   currentLoading: boolean
   saveStatus: SaveStatus
   lastSavedAt: string | null
+  dirty: boolean
 
   fetchList: () => Promise<void>
   createReport: () => Promise<string | null>
@@ -59,7 +60,19 @@ interface ReportsState {
   setCurrentBlocks: (blocks: Block[]) => void
   saveCurrent: () => Promise<void>
   deleteReport: (id: string) => Promise<void>
+
+  // operações de bloco
+  updateBlock: (id: string, patch: Partial<Block>) => void
+  moveBlock: (id: string, dir: 'up' | 'down') => void
+  duplicateBlock: (id: string) => void
+  deleteBlock: (id: string) => void
+  insertBlock: (type: BlockType, afterId?: string) => void
+  reorderBlocks: (activeId: string, overId: string) => void
 }
+
+const newId = () =>
+  globalThis.crypto?.randomUUID?.() ??
+  'b_' + Math.random().toString(36).slice(2) + Date.now().toString(36)
 
 export const useReportsStore = create<ReportsState>((set, get) => ({
   list: [],
@@ -68,6 +81,7 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
   currentLoading: false,
   saveStatus: 'idle',
   lastSavedAt: null,
+  dirty: false,
 
   fetchList: async () => {
     set({ listLoading: true })
@@ -115,21 +129,21 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
       set({ current: null, currentLoading: false })
       return
     }
-    set({ current: mapReport(data), currentLoading: false })
+    set({ current: mapReport(data), currentLoading: false, dirty: false })
   },
 
-  clearCurrent: () => set({ current: null, saveStatus: 'idle' }),
+  clearCurrent: () => set({ current: null, saveStatus: 'idle', dirty: false }),
 
   setCurrentTitle: (title) => {
     const cur = get().current
     if (!cur) return
-    set({ current: { ...cur, title } })
+    set({ current: { ...cur, title }, dirty: true })
   },
 
   setCurrentBlocks: (blocks) => {
     const cur = get().current
     if (!cur) return
-    set({ current: { ...cur, blocks } })
+    set({ current: { ...cur, blocks }, dirty: true })
   },
 
   saveCurrent: async () => {
@@ -150,7 +164,7 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
     const list = get().list
       .map((it) => (it.id === cur.id ? { ...it, title: cur.title, updatedAt: now } : it))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    set({ saveStatus: 'saved', lastSavedAt: now, list })
+    set({ saveStatus: 'saved', lastSavedAt: now, list, dirty: false })
   },
 
   deleteReport: async (id) => {
@@ -164,5 +178,68 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
       list: get().list.filter((it) => it.id !== id),
       current: wasCurrent ? null : get().current,
     })
+  },
+
+  // ---- operações de bloco (mexem em current.blocks de forma imutável) ----
+  updateBlock: (id, patch) => {
+    const cur = get().current
+    if (!cur) return
+    const blocks = cur.blocks.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b))
+    set({ current: { ...cur, blocks }, dirty: true })
+  },
+
+  moveBlock: (id, dir) => {
+    const cur = get().current
+    if (!cur) return
+    const i = cur.blocks.findIndex((b) => b.id === id)
+    if (i < 0) return
+    const j = dir === 'up' ? i - 1 : i + 1
+    if (j < 0 || j >= cur.blocks.length) return
+    const blocks = [...cur.blocks]
+    ;[blocks[i], blocks[j]] = [blocks[j], blocks[i]]
+    set({ current: { ...cur, blocks }, dirty: true })
+  },
+
+  duplicateBlock: (id) => {
+    const cur = get().current
+    if (!cur) return
+    const i = cur.blocks.findIndex((b) => b.id === id)
+    if (i < 0) return
+    const copy = { ...structuredClone(cur.blocks[i]), id: newId() } as Block
+    const blocks = [...cur.blocks]
+    blocks.splice(i + 1, 0, copy)
+    set({ current: { ...cur, blocks }, dirty: true })
+  },
+
+  deleteBlock: (id) => {
+    const cur = get().current
+    if (!cur) return
+    set({ current: { ...cur, blocks: cur.blocks.filter((b) => b.id !== id) }, dirty: true })
+  },
+
+  insertBlock: (type, afterId) => {
+    const cur = get().current
+    if (!cur) return
+    const block = createBlock(type)
+    const blocks = [...cur.blocks]
+    if (afterId) {
+      const i = blocks.findIndex((b) => b.id === afterId)
+      blocks.splice(i + 1, 0, block)
+    } else {
+      blocks.push(block)
+    }
+    set({ current: { ...cur, blocks }, dirty: true })
+  },
+
+  reorderBlocks: (activeId, overId) => {
+    const cur = get().current
+    if (!cur || activeId === overId) return
+    const from = cur.blocks.findIndex((b) => b.id === activeId)
+    const to = cur.blocks.findIndex((b) => b.id === overId)
+    if (from < 0 || to < 0) return
+    const blocks = [...cur.blocks]
+    const [moved] = blocks.splice(from, 1)
+    blocks.splice(to, 0, moved)
+    set({ current: { ...cur, blocks }, dirty: true })
   },
 }))

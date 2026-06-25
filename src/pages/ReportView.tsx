@@ -3,25 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useReportsStore } from '@/store/reportsStore'
 import { relativeTime } from '@/lib/dateGroups'
 import Spinner from '@/components/Spinner'
-import type { BlockType } from '@/types/blocks'
-
-const BLOCK_LABELS: Record<BlockType, string> = {
-  'report-header': 'Cabeçalho do Relatório',
-  legend: 'Legenda de Status',
-  heading: 'Título de Seção',
-  step: 'Etapa Numerada',
-  divider: 'Divisor',
-  'status-item': 'Item de Verificação',
-  'page-card': 'Página/Menu Testado',
-  paragraph: 'Parágrafo',
-  checklist: 'Checklist',
-  'device-test': 'Teste Multi-dispositivo',
-  image: 'Imagem/Print',
-  link: 'Link',
-  video: 'Vídeo',
-  callout: 'Nota/Callout',
-  table: 'Tabela',
-}
+import Editor from '@/components/Editor'
 
 export default function ReportView() {
   const { id } = useParams()
@@ -36,7 +18,12 @@ export default function ReportView() {
 
   useEffect(() => {
     if (id) void openReport(id)
-    return () => clearCurrent()
+    return () => {
+      // Garante que alterações dentro da janela do autosave não se percam
+      const st = useReportsStore.getState()
+      if (st.dirty) void st.saveCurrent()
+      clearCurrent()
+    }
   }, [id, openReport, clearCurrent])
 
   if (currentLoading) return <Spinner />
@@ -55,15 +42,13 @@ export default function ReportView() {
         ? 'Erro ao salvar'
         : saveStatus === 'saved'
           ? `Salvo ${relativeTime(lastSavedAt)}`
-          : ''
+          : 'Salvamento automático'
 
   return (
     <div className="flex h-full flex-col">
       {/* Header de ações */}
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-        <span
-          className={`text-xs ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-400'}`}
-        >
+        <span className={`text-xs ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-400'}`}>
           {saveLabel}
         </span>
         <div className="flex items-center gap-2">
@@ -73,18 +58,10 @@ export default function ReportView() {
           >
             Salvar
           </button>
-          <button
-            disabled
-            title="Disponível na Parte 7"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-400"
-          >
+          <button disabled title="Disponível na Parte 7" className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-400">
             Exportar PDF
           </button>
-          <button
-            disabled
-            title="Disponível na Parte 7"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-400"
-          >
+          <button disabled title="Disponível na Parte 7" className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-400">
             Exportar Word
           </button>
         </div>
@@ -96,30 +73,10 @@ export default function ReportView() {
           <input
             value={current.title}
             onChange={(e) => setCurrentTitle(e.target.value)}
-            onBlur={() => void saveCurrent()}
             placeholder="Título do relatório"
-            className="w-full border-none bg-transparent text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300"
+            className="mb-6 w-full border-none bg-transparent pl-9 text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300"
           />
-
-          <div className="mt-8 space-y-2">
-            {current.blocks.length === 0 && (
-              <p className="text-sm text-slate-400">Este relatório ainda não tem blocos.</p>
-            )}
-            {current.blocks.map((b) => (
-              <div
-                key={b.id}
-                className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600"
-              >
-                <span className="font-medium text-slate-800">{BLOCK_LABELS[b.type]}</span>
-                <span className="ml-2 text-xs text-slate-400">({b.type})</span>
-              </div>
-            ))}
-          </div>
-
-          <p className="mt-8 rounded-lg bg-slate-100 px-4 py-3 text-xs text-slate-500">
-            O editor de blocos (arrastar, configurar, adicionar) chega na Parte 4. Por enquanto, este
-            canvas mostra os blocos já presentes no relatório e permite renomear e salvar.
-          </p>
+          <Editor />
         </div>
       </div>
     </div>
