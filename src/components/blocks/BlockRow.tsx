@@ -20,7 +20,8 @@ export default function BlockRow({ block }: { block: Block }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
+    // Translate (sem escala) evita a distorção de largura/altura ao arrastar
+    transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
   }
