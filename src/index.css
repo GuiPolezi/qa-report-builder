@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+/* Mantém o conteúdo legível no modo somente leitura (fieldset disabled) */
+fieldset:disabled :where(input, textarea, select) {
+  opacity: 1;
+  cursor: default;
+}
+
+/* Exportar PDF via impressão: oculta o app e mostra só a visão de impressão */
+.print-view { display: none; }
+@media print {
+  #root { display: none !important; }
+  .print-view { display: block; }
+  @page { margin: 16mm; }
+}

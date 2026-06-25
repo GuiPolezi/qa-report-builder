@@ -7,6 +7,7 @@ import type { Block, BlockType, Report } from '@/types/blocks'
 // Item leve para a lista da sidebar
 export interface ReportListItem {
   id: string
+  ownerId: string
   title: string
   clientName: string | null
   groupId: string | null
@@ -16,10 +17,16 @@ export interface ReportListItem {
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
+export interface AssignableGroup {
+  id: string
+  name: string
+}
+
 // ---- mapeadores (snake_case do banco -> camelCase do app) ----
 function mapListItem(r: Record<string, unknown>): ReportListItem {
   return {
     id: r.id as string,
+    ownerId: r.owner_id as string,
     title: (r.title as string) ?? 'Sem título',
     clientName: (r.client_name as string | null) ?? null,
     groupId: (r.group_id as string | null) ?? null,
@@ -41,7 +48,7 @@ function mapReport(r: Record<string, unknown>): Report {
   }
 }
 
-const LIST_COLS = 'id, title, client_name, group_id, updated_at, created_at'
+const LIST_COLS = 'id, owner_id, title, client_name, group_id, updated_at, created_at'
 
 interface ReportsState {
   list: ReportListItem[]
@@ -51,8 +58,11 @@ interface ReportsState {
   saveStatus: SaveStatus
   lastSavedAt: string | null
   dirty: boolean
+  assignableGroups: AssignableGroup[]
 
   fetchList: () => Promise<void>
+  fetchAssignableGroups: () => Promise<void>
+  setCurrentGroup: (groupId: string | null) => void
   createReport: () => Promise<string | null>
   openReport: (id: string) => Promise<void>
   clearCurrent: () => void
@@ -82,6 +92,7 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
   saveStatus: 'idle',
   lastSavedAt: null,
   dirty: false,
+  assignableGroups: [],
 
   fetchList: async () => {
     set({ listLoading: true })
@@ -95,6 +106,22 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
       return
     }
     set({ list: (data ?? []).map(mapListItem), listLoading: false })
+  },
+
+  fetchAssignableGroups: async () => {
+    // RLS retorna só os grupos que o usuário pode ver (membro ou admin)
+    const { data, error } = await supabase.from('groups').select('id, name').order('name')
+    if (error) {
+      console.error('[reports] fetchAssignableGroups:', error.message)
+      return
+    }
+    set({ assignableGroups: (data ?? []) as AssignableGroup[] })
+  },
+
+  setCurrentGroup: (groupId) => {
+    const cur = get().current
+    if (!cur) return
+    set({ current: { ...cur, groupId }, dirty: true })
   },
 
   createReport: async () => {
@@ -152,7 +179,7 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
     set({ saveStatus: 'saving' })
     const { error } = await supabase
       .from('reports')
-      .update({ title: cur.title, client_name: cur.clientName, blocks: cur.blocks })
+      .update({ title: cur.title, client_name: cur.clientName, group_id: cur.groupId, blocks: cur.blocks })
       .eq('id', cur.id)
     if (error) {
       console.error('[reports] saveCurrent:', error.message)
@@ -162,7 +189,7 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
     const now = new Date().toISOString()
     // reflete a alteração na lista da sidebar e reordena por mais recente
     const list = get().list
-      .map((it) => (it.id === cur.id ? { ...it, title: cur.title, updatedAt: now } : it))
+      .map((it) => (it.id === cur.id ? { ...it, title: cur.title, groupId: cur.groupId, updatedAt: now } : it))
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     set({ saveStatus: 'saved', lastSavedAt: now, list, dirty: false })
   },

@@ -12,19 +12,19 @@ import { useReportsStore } from '@/store/reportsStore'
 import BlockRow from '@/components/blocks/BlockRow'
 import InsertMenu from '@/components/blocks/InsertMenu'
 
-export default function Editor() {
+export default function Editor({ readOnly = false }: { readOnly?: boolean }) {
   const current = useReportsStore((s) => s.current)
   const reorderBlocks = useReportsStore((s) => s.reorderBlocks)
   const insertBlock = useReportsStore((s) => s.insertBlock)
   const saveCurrent = useReportsStore((s) => s.saveCurrent)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // ---- Autosave (debounce 1s; não salva no carregamento nem em no-op) ----
+  // ---- Autosave (debounce 1s; não salva no carregamento, em no-op, nem em leitura) ----
   const idRef = useRef<string | null>(null)
   const snapRef = useRef('')
   useEffect(() => {
-    if (!current) return
-    const snap = JSON.stringify({ t: current.title, b: current.blocks })
+    if (!current || readOnly) return
+    const snap = JSON.stringify({ t: current.title, b: current.blocks, g: current.groupId })
     if (idRef.current !== current.id) {
       idRef.current = current.id
       snapRef.current = snap
@@ -34,10 +34,11 @@ export default function Editor() {
     snapRef.current = snap
     const timer = setTimeout(() => void saveCurrent(), 1000)
     return () => clearTimeout(timer)
-  }, [current, saveCurrent])
+  }, [current, saveCurrent, readOnly])
 
   // ---- Atalho "/" para abrir o menu (quando não estiver digitando) ----
   useEffect(() => {
+    if (readOnly) return
     const onKey = (e: KeyboardEvent) => {
       const el = document.activeElement
       const typing = el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)
@@ -48,7 +49,7 @@ export default function Editor() {
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [])
+  }, [readOnly])
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -60,8 +61,20 @@ export default function Editor() {
     if (over && active.id !== over.id) reorderBlocks(String(active.id), String(over.id))
   }
 
+  // Modo somente leitura: desabilita TODOS os campos e botões internos
+  // (inputs, selects, textareas, alça de arrastar, etc.) de forma robusta.
+  if (readOnly) {
+    return (
+      <fieldset disabled className="m-0 min-w-0 border-0 p-0 pl-8">
+        {current.blocks.map((b) => (
+          <BlockRow key={b.id} block={b} />
+        ))}
+      </fieldset>
+    )
+  }
+
   return (
-    <div className="pl-9">
+    <div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div>
@@ -73,10 +86,10 @@ export default function Editor() {
       </DndContext>
 
       {current.blocks.length === 0 && (
-        <p className="py-4 text-sm text-slate-400">Adicione o primeiro bloco abaixo.</p>
+        <p className="py-4 pl-8 text-sm text-slate-400">Adicione o primeiro bloco abaixo.</p>
       )}
 
-      <div className="relative mt-2">
+      <div className="relative mt-2 pl-8">
         <button
           onClick={() => setMenuOpen((v) => !v)}
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"

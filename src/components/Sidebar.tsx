@@ -99,6 +99,7 @@ export default function Sidebar() {
             <ul className="space-y-0.5">
               {group.items.map((r) => {
                 const active = r.id === activeId
+                const owned = r.ownerId === profile?.id
                 return (
                   <li key={r.id}>
                     <Link
@@ -107,14 +108,23 @@ export default function Sidebar() {
                         active ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <span className="truncate">{r.title || 'Sem título'}</span>
-                      <button
-                        onClick={(e) => void onDelete(e, r.id, r.title)}
-                        title="Excluir"
-                        className="ml-2 hidden shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 group-hover:block"
-                      >
-                        🗑
-                      </button>
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate">{r.title || 'Sem título'}</span>
+                        {!owned && (
+                          <span title="Compartilhado por um grupo" className="shrink-0 text-xs text-slate-400">
+                            ↗
+                          </span>
+                        )}
+                      </span>
+                      {owned && (
+                        <button
+                          onClick={(e) => void onDelete(e, r.id, r.title)}
+                          title="Excluir"
+                          className="ml-2 hidden shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 group-hover:block"
+                        >
+                          🗑
+                        </button>
+                      )}
                     </Link>
                   </li>
                 )
