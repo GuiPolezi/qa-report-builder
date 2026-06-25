@@ -3,10 +3,12 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AdminRoute from '@/components/AdminRoute'
+import AppLayout from '@/components/AppLayout'
 import Spinner from '@/components/Spinner'
 import LoginPage from '@/pages/LoginPage'
 import SignupPage from '@/pages/SignupPage'
-import DashboardPage from '@/pages/DashboardPage'
+import EmptyState from '@/pages/EmptyState'
+import ReportView from '@/pages/ReportView'
 import AdminPage from '@/pages/AdminPage'
 
 export default function App() {
@@ -18,7 +20,6 @@ export default function App() {
     return unsubscribe
   }, [init])
 
-  // Enquanto resolve a sessão inicial, evita "piscar" a tela de login.
   if (loading) return <Spinner />
 
   return (
@@ -26,11 +27,14 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
 
-      {/* Rotas que exigem login */}
+      {/* Exige login: shell com sidebar + área central */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<DashboardPage />} />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<EmptyState />} />
+          <Route path="/r/:id" element={<ReportView />} />
+        </Route>
 
-        {/* Subconjunto que exige admin */}
+        {/* Exige admin */}
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminPage />} />
         </Route>
