@@ -74,8 +74,8 @@ export default function ReportView() {
   return (
     <div className="flex h-full flex-col">
       {/* Header de ações */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link
             to="/"
             title="Voltar à página inicial"
@@ -95,7 +95,7 @@ export default function ReportView() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isOwner && (
             <label className="flex items-center gap-1.5 text-xs text-slate-500">
               Grupo:
@@ -125,14 +125,20 @@ export default function ReportView() {
             onClick={() => window.print()}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            Exportar PDF
+            <span className="hidden sm:inline">Exportar </span>PDF
           </button>
           <button
             onClick={() => void handleDocx()}
             disabled={exporting}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
-            {exporting ? 'Gerando…' : 'Exportar Word'}
+            {exporting ? (
+              'Gerando…'
+            ) : (
+              <>
+                <span className="hidden sm:inline">Exportar </span>Word
+              </>
+            )}
           </button>
         </div>
       </div>

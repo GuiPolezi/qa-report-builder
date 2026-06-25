@@ -6,6 +6,8 @@ import { groupByDate } from '@/lib/dateGroups'
 import { parseDocx, dataUrlToFile } from '@/lib/importDocx'
 import { uploadReportImage } from '@/lib/storage'
 import BlocksPanel from '@/components/BlocksPanel'
+import { useUiStore } from '@/store/uiStore'
+import { X } from 'lucide-react'
 
 export default function Sidebar() {
   const navigate = useNavigate()
@@ -26,6 +28,8 @@ export default function Sidebar() {
   const currentId = useReportsStore((s) => s.current?.id)
   const currentOwnerId = useReportsStore((s) => s.current?.ownerId)
   const canInsertBlocks = !!currentId && currentOwnerId === profile?.id
+  const sidebarOpen = useUiStore((s) => s.mobileSidebarOpen)
+  const closeSidebar = useUiStore((s) => s.closeSidebar)
 
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
@@ -52,7 +56,10 @@ export default function Sidebar() {
     setCreating(true)
     const id = await createReport()
     setCreating(false)
-    if (id) navigate(`/r/${id}`)
+    if (id) {
+      navigate(`/r/${id}`)
+      closeSidebar()
+    }
   }
 
   const onImportFile = async (file?: File | null) => {
@@ -85,6 +92,7 @@ export default function Sidebar() {
         await updateReportBlocks(id, finalBlocks)
       }
       navigate(`/r/${id}`)
+      closeSidebar()
     } catch (e) {
       console.error('[import]', e)
       alert('Não foi possível importar. Verifique se o arquivo é um .docx válido.')
@@ -102,14 +110,31 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-72 flex-col border-r border-slate-200 bg-white">
-      {/* Logo (clicável: volta à página inicial) */}
-      <Link to="/" className="flex items-center gap-2 px-4 py-4 transition-colors hover:bg-slate-50">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-sm font-bold text-white">
-          QA
-        </div>
-        <span className="font-semibold text-slate-900">Report Builder</span>
-      </Link>
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
+        sidebarOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full md:shadow-none'
+      }`}
+    >
+      {/* Logo (clicável: volta à página inicial) + fechar no mobile */}
+      <div className="flex items-center justify-between pr-2">
+        <Link
+          to="/"
+          onClick={closeSidebar}
+          className="flex flex-1 items-center gap-2 px-4 py-4 transition-colors hover:bg-slate-50"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-sm font-bold text-white">
+            QA
+          </div>
+          <span className="font-semibold text-slate-900">Report Builder</span>
+        </Link>
+        <button
+          onClick={closeSidebar}
+          aria-label="Fechar menu"
+          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 md:hidden"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
       {/* Novo relatório */}
       <div className="px-3">
@@ -171,6 +196,7 @@ export default function Sidebar() {
                   <li key={r.id}>
                     <Link
                       to={`/r/${r.id}`}
+                      onClick={closeSidebar}
                       className={`group flex items-center justify-between rounded-lg px-2 py-2 text-sm ${
                         active ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-700 hover:bg-slate-50'
                       }`}
@@ -216,6 +242,7 @@ export default function Sidebar() {
           {isAdmin && (
             <Link
               to="/admin"
+              onClick={closeSidebar}
               className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-center text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
               Admin
