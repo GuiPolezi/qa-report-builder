@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, Link } from 'react-router-dom'
-import { Home } from 'lucide-react'
+import { Home, Eye } from 'lucide-react'
 import { useReportsStore } from '@/store/reportsStore'
 import { useAuthStore } from '@/store/authStore'
 import { relativeTime } from '@/lib/dateGroups'
@@ -84,32 +84,35 @@ export default function ReportView() {
             <Home className="h-4 w-4" />
             <span className="hidden sm:inline">Início</span>
           </Link>
-          <span className={`text-xs ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-400'}`}>
-            {saveLabel}
-          </span>
-          {!isOwner && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-              Somente leitura (compartilhado)
+          {isOwner ? (
+            <span className={`text-xs ${saveStatus === 'error' ? 'text-red-600' : 'text-slate-400'}`}>
+              {saveLabel}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+              <Eye className="h-3.5 w-3.5" />
+              Visualização — somente leitura
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-slate-500">
-            Grupo:
-            <select
-              value={current.groupId ?? ''}
-              disabled={!isOwner}
-              onChange={(e) => setCurrentGroup(e.target.value || null)}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs outline-none focus:border-slate-500 disabled:opacity-60"
-            >
-              <option value="">Pessoal</option>
-              {assignableGroups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          {isOwner && (
+            <label className="flex items-center gap-1.5 text-xs text-slate-500">
+              Grupo:
+              <select
+                value={current.groupId ?? ''}
+                onChange={(e) => setCurrentGroup(e.target.value || null)}
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs outline-none focus:border-slate-500"
+              >
+                <option value="">Pessoal</option>
+                {assignableGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {isOwner && (
             <button
               onClick={() => void saveCurrent()}
@@ -136,19 +139,26 @@ export default function ReportView() {
 
       {/* Canvas */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-6 py-8">
-          <input
-            value={current.title}
-            onChange={(e) => setCurrentTitle(e.target.value)}
-            readOnly={!isOwner}
-            placeholder="Título do relatório"
-            className="mb-6 w-full border-none bg-transparent pl-11 text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300 read-only:cursor-default"
-          />
-          <div className="pl-11">
-            <ReportSummary blocks={current.blocks} />
+        {isOwner ? (
+          // Dono: editor por blocos
+          <div className="mx-auto max-w-3xl px-6 py-8">
+            <input
+              value={current.title}
+              onChange={(e) => setCurrentTitle(e.target.value)}
+              placeholder="Título do relatório"
+              className="mb-6 w-full border-none bg-transparent pl-11 text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300"
+            />
+            <div className="pl-11">
+              <ReportSummary blocks={current.blocks} />
+            </div>
+            <Editor />
           </div>
-          <Editor readOnly={!isOwner} />
-        </div>
+        ) : (
+          // Visualizador (não dono): relatório formatado, sem controles de edição
+          <div className="px-4">
+            <ReportRender report={current} framed />
+          </div>
+        )}
       </div>
 
       {/* Visão de impressão: portal fora do #root, usada ao Exportar PDF */}

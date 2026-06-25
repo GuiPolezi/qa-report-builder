@@ -191,11 +191,16 @@ function RenderBlock({ block }: { block: Block }) {
   }
 }
 
-export default function ReportRender({ report }: { report: Report }) {
+export default function ReportRender({ report, framed = false }: { report: Report; framed?: boolean }) {
   const summary = summarizeStatuses(report.blocks)
   return (
-    <div className="report-render mx-auto max-w-3xl bg-white p-8 text-slate-900">
-      <h1 className="mb-4 text-3xl font-bold">{report.title}</h1>
+    <div
+      className={`report-render mx-auto max-w-3xl bg-white p-8 text-slate-900 sm:p-10 ${
+        framed ? 'my-8 rounded-2xl border border-slate-200 shadow-sm' : ''
+      }`}
+    >
+      <h1 className="mb-1 text-3xl font-bold tracking-tight">{report.title}</h1>
+      <div className="mb-5 mt-3 h-px bg-slate-100" />
       {summary.total > 0 && (
         <div className="mb-5 rounded-lg border border-slate-200 p-3">
           <p className="mb-2 text-sm font-semibold text-slate-700">
