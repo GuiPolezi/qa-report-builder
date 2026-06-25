@@ -5,6 +5,7 @@ import {
 import type { Block, Report, StatusValue } from '@/types/blocks'
 import { STATUS_META } from '@/types/blocks'
 import { getSignedUrl } from '@/lib/storage'
+import { summarizeStatuses } from '@/lib/statusSummary'
 
 type ImgType = 'png' | 'jpg' | 'gif' | 'bmp'
 interface FetchedImage { data: Uint8Array; width: number; height: number; type: ImgType }
@@ -208,6 +209,23 @@ export async function exportReportToDocx(report: Report): Promise<void> {
   const children: (Paragraph | Table)[] = [
     new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun({ text: report.title })] }),
   ]
+
+  // Linha de resumo (contagem por status, conforme a legenda)
+  const summary = summarizeStatuses(report.blocks)
+  if (summary.total > 0) {
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `Resumo (${summary.total} itens):  `, bold: true }),
+          ...summary.display.flatMap((s) => [
+            new TextRun({ text: '● ', color: hex(s), bold: true }),
+            new TextRun({ text: `${STATUS_META[s].label}: ${summary.counts[s]}    ` }),
+          ]),
+        ],
+      }),
+    )
+  }
+
   for (const b of report.blocks) children.push(...blockToElements(b, images))
 
   const doc = new Document({ sections: [{ children }] })

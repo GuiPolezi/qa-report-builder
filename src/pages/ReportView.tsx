@@ -8,6 +8,7 @@ import { relativeTime } from '@/lib/dateGroups'
 import Spinner from '@/components/Spinner'
 import Editor from '@/components/Editor'
 import ReportRender from '@/components/ReportRender'
+import ReportSummary from '@/components/ReportSummary'
 import { exportReportToDocx } from '@/lib/exportDocx'
 
 export default function ReportView() {
@@ -143,6 +144,9 @@ export default function ReportView() {
             placeholder="Título do relatório"
             className="mb-6 w-full border-none bg-transparent pl-11 text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300 read-only:cursor-default"
           />
+          <div className="pl-11">
+            <ReportSummary blocks={current.blocks} />
+          </div>
           <Editor readOnly={!isOwner} />
         </div>
       </div>

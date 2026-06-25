@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Block, Report } from '@/types/blocks'
 import { STATUS_META } from '@/types/blocks'
 import { getSignedUrl } from '@/lib/storage'
+import { summarizeStatuses } from '@/lib/statusSummary'
 
 function RenderImage({ path, caption }: { path: string; caption?: string }) {
   const [url, setUrl] = useState<string | null>(null)
@@ -191,9 +192,25 @@ function RenderBlock({ block }: { block: Block }) {
 }
 
 export default function ReportRender({ report }: { report: Report }) {
+  const summary = summarizeStatuses(report.blocks)
   return (
     <div className="report-render mx-auto max-w-3xl bg-white p-8 text-slate-900">
       <h1 className="mb-4 text-3xl font-bold">{report.title}</h1>
+      {summary.total > 0 && (
+        <div className="mb-5 rounded-lg border border-slate-200 p-3">
+          <p className="mb-2 text-sm font-semibold text-slate-700">
+            Resumo — {summary.total} {summary.total === 1 ? 'item' : 'itens'}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {summary.display.map((s) => (
+              <span key={s} className="inline-flex items-center gap-1.5 text-sm">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: STATUS_META[s].color }} />
+                {STATUS_META[s].label}: <strong>{summary.counts[s]}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       {report.blocks.map((b) => (
         <RenderBlock key={b.id} block={b} />
       ))}
