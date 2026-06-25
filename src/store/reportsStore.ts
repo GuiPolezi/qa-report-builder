@@ -79,6 +79,7 @@ interface ReportsState {
   duplicateBlock: (id: string) => void
   deleteBlock: (id: string) => void
   insertBlock: (type: BlockType, afterId?: string) => void
+  prependBlock: (type: BlockType) => void
   reorderBlocks: (activeId: string, overId: string) => void
 }
 
@@ -280,6 +281,12 @@ export const useReportsStore = create<ReportsState>((set, get) => ({
       blocks.push(block)
     }
     set({ current: { ...cur, blocks }, dirty: true })
+  },
+
+  prependBlock: (type) => {
+    const cur = get().current
+    if (!cur) return
+    set({ current: { ...cur, blocks: [createBlock(type), ...cur.blocks] }, dirty: true })
   },
 
   reorderBlocks: (activeId, overId) => {

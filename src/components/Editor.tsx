@@ -8,6 +8,7 @@ import {
 } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { Plus } from 'lucide-react'
 import { useReportsStore } from '@/store/reportsStore'
 import BlockRow from '@/components/blocks/BlockRow'
 import InsertMenu from '@/components/blocks/InsertMenu'
@@ -15,7 +16,7 @@ import InsertMenu from '@/components/blocks/InsertMenu'
 export default function Editor({ readOnly = false }: { readOnly?: boolean }) {
   const current = useReportsStore((s) => s.current)
   const reorderBlocks = useReportsStore((s) => s.reorderBlocks)
-  const insertBlock = useReportsStore((s) => s.insertBlock)
+  const prependBlock = useReportsStore((s) => s.prependBlock)
   const saveCurrent = useReportsStore((s) => s.saveCurrent)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -36,7 +37,7 @@ export default function Editor({ readOnly = false }: { readOnly?: boolean }) {
     return () => clearTimeout(timer)
   }, [current, saveCurrent, readOnly])
 
-  // ---- Atalho "/" para abrir o menu (quando não estiver digitando) ----
+  // ---- Atalho "/" para abrir o insertor do topo (quando não estiver digitando) ----
   useEffect(() => {
     if (readOnly) return
     const onKey = (e: KeyboardEvent) => {
@@ -61,8 +62,7 @@ export default function Editor({ readOnly = false }: { readOnly?: boolean }) {
     if (over && active.id !== over.id) reorderBlocks(String(active.id), String(over.id))
   }
 
-  // Modo somente leitura: desabilita TODOS os campos e botões internos
-  // (inputs, selects, textareas, alça de arrastar, etc.) de forma robusta.
+  // Modo somente leitura: desabilita todos os campos e botões internos
   if (readOnly) {
     return (
       <fieldset disabled className="m-0 min-w-0 border-0 p-0 pl-8">
@@ -75,6 +75,26 @@ export default function Editor({ readOnly = false }: { readOnly?: boolean }) {
 
   return (
     <div>
+      {/* Insertor fixo no topo (Gutenberg-style): sempre visível, insere no início */}
+      <div className="relative mb-1 pl-8">
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-500 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-700"
+        >
+          <Plus className="h-4 w-4" /> Adicionar bloco
+          <span className="ml-1 text-xs text-slate-400">ou tecle /</span>
+        </button>
+        {menuOpen && (
+          <InsertMenu
+            onPick={(t) => {
+              prependBlock(t)
+              setMenuOpen(false)
+            }}
+            onClose={() => setMenuOpen(false)}
+          />
+        )}
+      </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div>
@@ -86,26 +106,10 @@ export default function Editor({ readOnly = false }: { readOnly?: boolean }) {
       </DndContext>
 
       {current.blocks.length === 0 && (
-        <p className="py-4 pl-8 text-sm text-slate-400">Adicione o primeiro bloco abaixo.</p>
+        <p className="py-6 pl-8 text-sm text-slate-400">
+          Nenhum bloco ainda. Use “Adicionar bloco” acima, ou passe o mouse sobre um bloco e use o “+” na lateral.
+        </p>
       )}
-
-      <div className="relative mt-2 pl-8">
-        <button
-          onClick={() => setMenuOpen((v) => !v)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-        >
-          + Adicionar bloco <span className="ml-1 text-xs text-slate-400">(ou tecle /)</span>
-        </button>
-        {menuOpen && (
-          <InsertMenu
-            onPick={(t) => {
-              insertBlock(t)
-              setMenuOpen(false)
-            }}
-            onClose={() => setMenuOpen(false)}
-          />
-        )}
-      </div>
     </div>
   )
 }

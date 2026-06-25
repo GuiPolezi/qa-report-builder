@@ -28,7 +28,7 @@ const CATALOG: Entry[] = [
   { type: 'device-test', label: 'Teste multi-dispositivo', desc: 'Mesma página em vários aparelhos', icon: MonitorSmartphone, group: 'Conteúdo' },
   { type: 'table', label: 'Tabela', desc: 'Tabela de URLs e status', icon: Table, group: 'Conteúdo' },
   { type: 'callout', label: 'Nota / callout', desc: 'Caixa de nota, atenção ou conclusão', icon: StickyNote, group: 'Conteúdo' },
-  { type: 'image', label: 'Imagem / print', desc: 'Screenshot do problema (Parte 5)', icon: ImageIcon, group: 'Mídia' },
+  { type: 'image', label: 'Imagem / print', desc: 'Print do problema: enviar, arrastar ou colar', icon: ImageIcon, group: 'Mídia' },
   { type: 'link', label: 'Link', desc: 'URL testada', icon: LinkIcon, group: 'Mídia' },
   { type: 'video', label: 'Vídeo', desc: 'Vídeo demonstrando o bug', icon: Video, group: 'Mídia' },
 ]
@@ -40,7 +40,7 @@ export default function InsertMenu({
 }: {
   onPick: (type: BlockType) => void
   onClose: () => void
-  align?: 'left' | 'center'
+  align?: 'left' | 'center' | 'gutter'
 }) {
   const [query, setQuery] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -71,12 +71,17 @@ export default function InsertMenu({
     return [...map.entries()]
   }, [query])
 
+  const pos =
+    align === 'center'
+      ? 'left-1/2 top-full mt-1 -translate-x-1/2'
+      : align === 'gutter'
+        ? 'left-8 top-0'
+        : 'left-0 top-full mt-1'
+
   return (
     <div
       ref={ref}
-      className={`absolute z-30 mt-1 w-[26rem] rounded-xl border border-slate-200 bg-white p-3 shadow-xl ${
-        align === 'center' ? 'left-1/2 -translate-x-1/2' : 'left-0'
-      }`}
+      className={`absolute z-30 w-[26rem] rounded-xl border border-slate-200 bg-white p-3 shadow-xl ${pos}`}
     >
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
