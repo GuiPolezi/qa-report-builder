@@ -10,6 +10,7 @@ import type {
 } from '@/types/blocks'
 import { STATUS_META } from '@/types/blocks'
 import { Field, StatusSelect, TextArea, TextInput } from '@/components/ui/Inputs'
+import ImageBlockEditor from '@/components/blocks/editors/ImageBlockEditor'
 
 interface Props {
   block: Block
@@ -361,12 +362,8 @@ export default function BlockBody({ block, update }: Props) {
       )
     }
 
-    // ---------------- Imagem (Parte 5: upload/storage) ----------------
+    // ---------------- Imagem ----------------
     case 'image':
-      return (
-        <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-xs text-slate-400">
-          Bloco de imagem — upload e colar print chegam na Parte 5.
-        </div>
-      )
+      return <ImageBlockEditor block={block} update={update} />
   }
 }
